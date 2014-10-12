@@ -159,7 +159,7 @@ const (
 		}
 
 		function n() {
-			var a = parseInt(1e6 * Math.random()), b = 1e6 - a;
+			var a = parseInt(1e6 * Math.random()), b = 2 * a;
 			return a + "." + b
 		}
 
