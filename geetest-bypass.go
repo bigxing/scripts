@@ -24,6 +24,7 @@ type serverJSON struct {
 
 var (
 	vm = otto.New()
+	c = &http.Client{}
 )
 
 func main() {
@@ -36,7 +37,7 @@ func main() {
 	//douban 2add92d43d3beb28149720a6a3698061
 	//geetest a40fd3b0d712165c5d13e6f747e948d4
 	pCount := flag.Int("c", 100, "count")
-	pID := flag.String("gt", "482708a0f54c0bff54c6dafe3629d7bc", "geetest ID")
+	pID := flag.String("gt", "a40fd3b0d712165c5d13e6f747e948d4", "geetest ID")
 	flag.Parse()
 
 	for i := 0; i < *pCount; i++ {
@@ -45,13 +46,15 @@ func main() {
 }
 
 func flirt(gtID *string) string {
-	challengePage, err := http.Get(challengeURL + *gtID)
+	creq, _ := http.NewRequest("GET", challengeURL + *gtID, nil)
+	creq.Header.Add("User-Agent", ua)
+	cresp, err := c.Do(creq)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer challengePage.Body.Close()
-	challengeBody, _ := ioutil.ReadAll(challengePage.Body)
-	challengeString := string(challengeBody)
+	defer cresp.Body.Close()
+	challengePage, _ := ioutil.ReadAll(cresp.Body)
+	challengeString := string(challengePage)
 	jsonString := challengeString[strings.Index(challengeString, "= {") + 2 : strings.Index(challengeString, "}") + 1]
 	config := serverJSON{}
 	json.Unmarshal([]byte(jsonString), &config)
@@ -81,13 +84,15 @@ func flirt(gtID *string) string {
 
 	jsResult, _ := vm.Run(gtjsGetResponseURL)
 	ajaxURL, _ := jsResult.ToString()
-	ajaxPage, err := http.Get(ajaxURL)
+	areq, _ := http.NewRequest("GET", ajaxURL, nil)
+	areq.Header.Add("User-Agent", ua)
+	aresp, err := c.Do(areq)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer ajaxPage.Body.Close()
-	ajaxPageString, _ := ioutil.ReadAll(ajaxPage.Body)
-	return string(ajaxPageString)
+	defer aresp.Body.Close()
+	ajaxPage, _ := ioutil.ReadAll(aresp.Body)
+	return string(ajaxPage)
 }
 
 func deCAPTCHA(image1, image2 image.Image) int {
@@ -193,4 +198,6 @@ const (
 	gtjsGetResponseURL = `
 		apiserver + "ajax.php?api=jordan&challenge=" + challenge + "&userresponse=" + p() + "&passtime=" + b + "&b=" + n() + "&imgload=" + parseInt(Math.random() * 200 + 300) + "&random=" + parseInt(1e6 * Math.random()) + "&a=" + z()
 	`
+
+	ua = "Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/37.0.2062.124 Safari/537.36"
 )
